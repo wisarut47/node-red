@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calorie Calculator</title>
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    #jsonDisplay {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      margin-bottom: 10px;
+    }
+
+    strong {
+      color: #3498db;
+    }
+
+    ul ul {
+      margin-top: 5px;
+      margin-left: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Nutritional Information and Calculator</h1>
+
+<label for="foodName">Select a food:</label>
+<select id="foodName">
+  <option value="redbull">Red Bull</option>
+  <!-- Add more options for other foods as needed -->
+</select>
+
+<label for="foodWeight">Enter the weight of food (in grams):</label>
+<input type="number" id="foodWeight" min="0" placeholder="Enter weight">
+
+<button onclick="calculateAndDisplay()">Calculate Calories</button>
+
+<div id="jsonDisplay"></div>
+<div id="calculatedDisplay"></div>
+
+<script>
+   document.addEventListener('DOMContentLoaded', function () {
+    // Fetch JSON data from the server
+    fetch('food.json')
+      .then(response => response.json())
+      .then(data => {
+        // Display each key-value pair in a more user-friendly way
+        displayJSON(data);
+      })
+      .catch(error => console.error('Error fetching JSON:', error));
+  });
+
+  function displayJSON(data) {
+    const jsonDisplay = document.getElementById('jsonDisplay');
+    
+    // Create a list for better formatting
+    const list = document.createElement('ul');
+
+    // Iterate through each key-value pair
+    Object.keys(data).forEach(key => {
+      const value = data[key];
+
+      // Create list items
+      const listItem = document.createElement('li');
+
+      // If the value is an object, create a nested list
+      if (typeof value === 'object') {
+        listItem.innerHTML = `<strong>${capitalizeFirstLetter(key)}:</strong>`;
+        const nestedList = document.createElement('ul');
+
+        // Iterate through the object properties
+        Object.entries(value).forEach(([nestedKey, nestedValue]) => {
+          const nestedListItem = document.createElement('li');
+          nestedListItem.innerHTML = `<strong>${capitalizeFirstLetter(nestedKey)}:</strong> ${nestedValue}`;
+          nestedList.appendChild(nestedListItem);
+        });
+
+        listItem.appendChild(nestedList);
+      } else {
+        listItem.innerHTML = `<strong>${capitalizeFirstLetter(key)}:</strong> ${value}`;
+      }
+
+      // Append list item to the list
+      list.appendChild(listItem);
+    });
+
+    // Append the list to the jsonDisplay div
+    jsonDisplay.appendChild(list);
+  }
+
+  // Function to capitalize the first letter of a string
+  function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  }
+
+  function calculateAndDisplay() {
+    // Get the selected food name and weight entered by the user
+    const selectedFood = document.getElementById('foodName').value;
+    const weightInGrams = document.getElementById('foodWeight').value;
+
+    // Validate the input
+    if (!weightInGrams || weightInGrams <= 0) {
+      alert('Please enter a valid weight.');
+      return;
+    }
+
+    // Fetch JSON data from the server
+    fetch('food.json')
+      .then(response => response.json())
+      .then(data => {
+        // Check if the selected food exists in the JSON data
+        if (!data[selectedFood]) {
+          alert('Selected food not found in the database.');
+          return;
+        }
+
+        // Calculate the nutritional values for the given weight
+        const foodData = data[selectedFood];
+        const ratio = weightInGrams / 100;
+        const calculatedValues = {};
+
+        // Calculate values for each key in the foodData
+        Object.keys(foodData).forEach(key => {
+          calculatedValues[key] = (foodData[key] * ratio).toFixed(2); // Format to two decimal places
+        });
+
+        // Display the calculated values
+        displayCalculatedValues(calculatedValues);
+      })
+      .catch(error => console.error('Error fetching JSON:', error));
+  }
+
+  function displayCalculatedValues(calculatedValues) {
+    const calculatedDisplay = document.getElementById('calculatedDisplay');
+    calculatedDisplay.innerHTML = '<h2>Calculated Nutritional Values</h2>';
+
+    // Create a table to display the calculated values
+    const table = document.createElement('table');
+    const tableBody = document.createElement('tbody');
+
+    // Display each key-value pair as a separate row in the table
+    Object.keys(calculatedValues).forEach(key => {
+      const row = document.createElement('tr');
+
+      // Create cells for key and value
+      const keyCell = document.createElement('td');
+      keyCell.textContent = key;
+
+      const valueCell = document.createElement('td');
+      valueCell.textContent = calculatedValues[key];
+
+      // Append cells to the row
+      row.appendChild(keyCell);
+      row.appendChild(valueCell);
+
+      // Append row to the table body
+      tableBody.appendChild(row);
+    });
+
+    // Append table body to the table
+    table.appendChild(tableBody);
+
+    // Append the table to the calculated display div
+    calculatedDisplay.appendChild(table);
+  }
+</script>
+
+</body>
+</html>
+
